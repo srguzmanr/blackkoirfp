@@ -484,10 +484,9 @@
           <select id="filterNAICS" class="form-select-dark">
             <option value="">All NAICS Categories</option>
             <option value="design">🎨 Graphic Design</option>
-            <option value="web">💻 Web & IT Services</option>
-            <option value="print">🖨️ Print Services</option>
-            <option value="brand">📊 Marketing & Brand</option>
-            <option value="marketing">📣 Advertising & Media</option>
+            <option value="web">💻 Web Design & Development</option>
+            <option value="print">🖨️ Printing Services</option>
+            <option value="marketing">📣 Marketing Services</option>
             <option value="translation">🌐 Translation (Spanish)</option>
             <option value="travel">✈️ Travel Services</option>
           </select>
@@ -599,11 +598,10 @@
     // CONFIG & STATE
     // ============================================
     const NAICS_MAP = {
-      design:      ['541430','541490','541921','541922'],
-      web:         ['541511','541512','541513','541519'],
+      design:      ['541430','541490'],  // Graphic Design only (removed photo)
+      web:         ['541511','541512','541519'],
       print:       ['323111','323113','323117','323120'],
-      brand:       ['541613','541910'],
-      marketing:   ['541810','541820','541830','541840','541850','541860','541890','512110','512191'],
+      marketing:   ['541810','541613','541820'],  // Marketing & Brand consolidated
       translation: ['541930'],
       travel:      ['561510','561520','561599']
     };
@@ -887,8 +885,8 @@
       params.set('postedFrom', formatDateSAM(daysAgo(180)));  // 6 months back (API limit)
       params.set('postedTo', formatDateSAM(new Date()));
       
-      // Keyword search - use 'keyword' for broader search (not just title)
-      if (keywords) params.set('keyword', keywords);
+      // Keyword search - API only supports title search
+      if (keywords) params.set('title', keywords);
       
       // NAICS filter only if category selected
       if (naicsCodes.length) {
@@ -1115,18 +1113,6 @@
           typeOfSetAsideDescription: 'Small Business Set-Aside',
           placeOfPerformance: { state: { code: 'TX' } },
           description: 'Complete redesign of a NASA center public website including information architecture, responsive design, CMS migration to Drupal, content strategy, accessibility compliance, and 12 months of post-launch support.'
-        },
-        {
-          noticeId: 'DEMO-012-2026',
-          title: 'Commercial Photography Services — Events and Portraits',
-          fullParentPathName: 'Department of State',
-          departmentName: 'DOS',
-          postedDate: '2026-01-31',
-          responseDeadLine: '2026-02-28T12:00:00-05:00',
-          naicsCode: '541922',
-          typeOfSetAsideDescription: '',
-          placeOfPerformance: { state: { code: 'DC' } },
-          description: 'Professional photography services for diplomatic events, official portraits, conference documentation, and social media content. Photographer must have experience with high-security government environments.'
         },
         {
           noticeId: 'DEMO-013-2026',
