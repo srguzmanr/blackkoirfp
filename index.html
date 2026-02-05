@@ -1,0 +1,1496 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Black Koi 360 — RFP Scanner</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --koi-black: #0a0a0a;
+      --koi-dark: #141414;
+      --koi-surface: #1c1c1c;
+      --koi-border: #2a2a2a;
+      --koi-gold: #d4a853;
+      --koi-gold-dim: #a07d3a;
+      --koi-text: #e8e8e8;
+      --koi-text-dim: #888888;
+      --koi-red: #c0392b;
+      --koi-green: #27ae60;
+      --koi-blue: #2980b9;
+      --koi-orange: #d35400;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      background: var(--koi-black);
+      color: var(--koi-text);
+      font-family: 'DM Sans', sans-serif;
+      min-height: 100vh;
+    }
+
+    /* --- HEADER --- */
+    .app-header {
+      background: var(--koi-dark);
+      border-bottom: 1px solid var(--koi-border);
+      padding: 1rem 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .brand-icon {
+      width: 36px;
+      height: 36px;
+      background: var(--koi-gold);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      color: var(--koi-black);
+      font-size: 0.85rem;
+    }
+
+    .brand-name {
+      font-weight: 700;
+      font-size: 1.15rem;
+      letter-spacing: 0.5px;
+    }
+
+    .brand-name span { color: var(--koi-gold); }
+
+    .header-status {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.8rem;
+      color: var(--koi-text-dim);
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--koi-green);
+    }
+
+    .status-dot.disconnected { background: var(--koi-red); }
+
+    /* --- NAV TABS --- */
+    .nav-tabs-custom {
+      background: var(--koi-dark);
+      border-bottom: 1px solid var(--koi-border);
+      padding: 0 2rem;
+      display: flex;
+      gap: 0;
+    }
+
+    .nav-tab {
+      padding: 0.85rem 1.5rem;
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--koi-text-dim);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all 0.2s;
+      background: none;
+      border-top: none;
+      border-left: none;
+      border-right: none;
+    }
+
+    .nav-tab:hover { color: var(--koi-text); }
+    .nav-tab.active {
+      color: var(--koi-gold);
+      border-bottom-color: var(--koi-gold);
+    }
+
+    /* --- MAIN LAYOUT --- */
+    .main-content { padding: 1.5rem 2rem; max-width: 1400px; margin: 0 auto; }
+
+    /* --- SEARCH PANEL --- */
+    .search-panel {
+      background: var(--koi-surface);
+      border: 1px solid var(--koi-border);
+      border-radius: 8px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .search-panel h2 {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--koi-text-dim);
+      margin-bottom: 1rem;
+    }
+
+    .search-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+    }
+
+    .filter-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 0.75rem;
+    }
+
+    /* --- FORM CONTROLS --- */
+    .form-control-dark,
+    .form-select-dark {
+      background: var(--koi-dark);
+      border: 1px solid var(--koi-border);
+      color: var(--koi-text);
+      border-radius: 6px;
+      padding: 0.6rem 0.85rem;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.9rem;
+      transition: border-color 0.2s;
+    }
+
+    .form-control-dark:focus,
+    .form-select-dark:focus {
+      outline: none;
+      border-color: var(--koi-gold);
+      box-shadow: 0 0 0 2px rgba(212, 168, 83, 0.15);
+    }
+
+    .form-control-dark::placeholder { color: var(--koi-text-dim); }
+
+    .form-select-dark option {
+      background: var(--koi-dark);
+      color: var(--koi-text);
+    }
+
+    /* --- BUTTONS --- */
+    .btn-koi {
+      background: var(--koi-gold);
+      color: var(--koi-black);
+      font-weight: 600;
+      border: none;
+      border-radius: 6px;
+      padding: 0.6rem 1.5rem;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+
+    .btn-koi:hover { background: #e0b560; transform: translateY(-1px); }
+    .btn-koi:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--koi-text-dim);
+      border: 1px solid var(--koi-border);
+      border-radius: 6px;
+      padding: 0.4rem 0.85rem;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-ghost:hover {
+      border-color: var(--koi-gold);
+      color: var(--koi-gold);
+    }
+
+    .btn-save {
+      background: transparent;
+      border: 1px solid var(--koi-green);
+      color: var(--koi-green);
+      border-radius: 6px;
+      padding: 0.35rem 0.7rem;
+      font-size: 0.75rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-save:hover { background: var(--koi-green); color: white; }
+    .btn-save.saved { background: var(--koi-green); color: white; }
+
+    /* --- RESULTS --- */
+    .results-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+
+    .results-count {
+      font-size: 0.85rem;
+      color: var(--koi-text-dim);
+    }
+
+    .results-count strong { color: var(--koi-gold); }
+
+    .rfp-card {
+      background: var(--koi-surface);
+      border: 1px solid var(--koi-border);
+      border-radius: 8px;
+      padding: 1.25rem;
+      margin-bottom: 0.75rem;
+      transition: border-color 0.2s;
+    }
+
+    .rfp-card:hover { border-color: var(--koi-gold-dim); }
+
+    .rfp-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 1rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .rfp-title {
+      font-weight: 600;
+      font-size: 0.95rem;
+      line-height: 1.4;
+      flex: 1;
+    }
+
+    .rfp-title a {
+      color: var(--koi-text);
+      text-decoration: none;
+    }
+
+    .rfp-title a:hover { color: var(--koi-gold); }
+
+    .rfp-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      font-size: 0.8rem;
+      color: var(--koi-text-dim);
+      margin-bottom: 0.5rem;
+    }
+
+    .rfp-meta-item { display: flex; align-items: center; gap: 0.3rem; }
+
+    .rfp-description {
+      font-size: 0.85rem;
+      color: var(--koi-text-dim);
+      line-height: 1.5;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .rfp-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      margin-top: 0.75rem;
+    }
+
+    .tag {
+      font-size: 0.7rem;
+      padding: 0.2rem 0.55rem;
+      border-radius: 4px;
+      font-weight: 500;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .tag-naics { background: rgba(41, 128, 185, 0.15); color: var(--koi-blue); }
+    .tag-deadline { background: rgba(192, 57, 43, 0.15); color: #e74c3c; }
+    .tag-deadline.safe { background: rgba(39, 174, 96, 0.15); color: var(--koi-green); }
+    .tag-setaside { background: rgba(212, 168, 83, 0.15); color: var(--koi-gold); }
+    .tag-state { background: rgba(255,255,255,0.06); color: var(--koi-text-dim); }
+
+    /* --- STATUS BADGES (saved RFPs) --- */
+    .status-badge {
+      font-size: 0.7rem;
+      padding: 0.2rem 0.55rem;
+      border-radius: 4px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .status-saved { background: rgba(41, 128, 185, 0.2); color: var(--koi-blue); }
+    .status-reviewing { background: rgba(212, 168, 83, 0.2); color: var(--koi-gold); }
+    .status-bidding { background: rgba(211, 84, 0, 0.2); color: var(--koi-orange); }
+    .status-submitted { background: rgba(39, 174, 96, 0.2); color: var(--koi-green); }
+    .status-won { background: var(--koi-green); color: white; }
+    .status-lost { background: rgba(192, 57, 43, 0.2); color: var(--koi-red); }
+    .status-passed { background: rgba(255,255,255,0.06); color: var(--koi-text-dim); }
+
+    /* --- EMPTY / LOADING STATES --- */
+    .empty-state {
+      text-align: center;
+      padding: 4rem 2rem;
+      color: var(--koi-text-dim);
+    }
+
+    .empty-state h3 { color: var(--koi-text); margin-bottom: 0.5rem; }
+
+    .loading-spinner {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 2px solid var(--koi-border);
+      border-top-color: var(--koi-gold);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* --- CONFIG PANEL --- */
+    .config-panel {
+      background: var(--koi-surface);
+      border: 1px solid var(--koi-border);
+      border-radius: 8px;
+      padding: 1.5rem;
+    }
+
+    .config-panel label {
+      font-size: 0.8rem;
+      color: var(--koi-text-dim);
+      display: block;
+      margin-bottom: 0.3rem;
+    }
+
+    .config-panel input {
+      width: 100%;
+      margin-bottom: 1rem;
+    }
+
+    .config-status {
+      padding: 0.75rem;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      margin-top: 1rem;
+    }
+
+    .config-status.success { background: rgba(39, 174, 96, 0.1); color: var(--koi-green); border: 1px solid rgba(39, 174, 96, 0.3); }
+    .config-status.error { background: rgba(192, 57, 43, 0.1); color: var(--koi-red); border: 1px solid rgba(192, 57, 43, 0.3); }
+
+    /* --- PAGINATION --- */
+    .pagination-bar {
+      display: flex;
+      justify-content: center;
+      gap: 0.5rem;
+      margin-top: 1.5rem;
+    }
+
+    /* --- RESPONSIVE --- */
+    @media (max-width: 768px) {
+      .app-header { padding: 1rem; }
+      .main-content { padding: 1rem; }
+      .search-row { grid-template-columns: 1fr; }
+      .filter-row { grid-template-columns: 1fr 1fr; }
+      .nav-tabs-custom { padding: 0 1rem; overflow-x: auto; }
+      .rfp-card-header { flex-direction: column; }
+      .rfp-meta { gap: 0.5rem; }
+    }
+
+    /* --- NOTES TEXTAREA --- */
+    .notes-area {
+      background: var(--koi-dark);
+      border: 1px solid var(--koi-border);
+      color: var(--koi-text);
+      border-radius: 6px;
+      padding: 0.5rem;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.8rem;
+      width: 100%;
+      resize: vertical;
+      min-height: 60px;
+    }
+
+    .notes-area:focus { outline: none; border-color: var(--koi-gold); }
+
+    /* --- TOOLTIP --- */
+    .koi-tooltip {
+      position: relative;
+      cursor: help;
+    }
+
+    .koi-tooltip::after {
+      content: attr(data-tip);
+      position: absolute;
+      bottom: 120%;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--koi-dark);
+      border: 1px solid var(--koi-border);
+      color: var(--koi-text);
+      padding: 0.4rem 0.7rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      white-space: nowrap;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s;
+    }
+
+    .koi-tooltip:hover::after { opacity: 1; }
+  </style>
+</head>
+<body>
+
+  <!-- ===== HEADER ===== -->
+  <header class="app-header">
+    <div class="brand">
+      <div class="brand-icon">鯉</div>
+      <div class="brand-name">BLACK KOI <span>360</span></div>
+    </div>
+    <div class="header-status">
+      <div class="status-dot" id="connectionDot"></div>
+      <span id="connectionText">Checking connection...</span>
+    </div>
+  </header>
+
+  <!-- ===== NAV TABS ===== -->
+  <nav class="nav-tabs-custom">
+    <button class="nav-tab active" data-tab="search" onclick="switchTab('search')">🔍 Search RFPs</button>
+    <button class="nav-tab" data-tab="saved" onclick="switchTab('saved')">📁 Saved <span id="savedCount"></span></button>
+    <button class="nav-tab" data-tab="config" onclick="switchTab('config')">⚙️ Settings</button>
+  </nav>
+
+  <!-- ===== MAIN CONTENT ===== -->
+  <main class="main-content">
+
+    <!-- TAB: SEARCH -->
+    <section id="tab-search">
+      <div class="search-panel">
+        <h2>Search Federal Opportunities</h2>
+        <div class="search-row">
+          <input type="text" id="searchKeywords" class="form-control-dark" 
+                 placeholder="Keywords: graphic design, branding, web development, print services...">
+          <button class="btn-koi" id="searchBtn" onclick="searchRFPs()">
+            Search SAM.gov
+          </button>
+        </div>
+        <div class="filter-row">
+          <select id="filterNAICS" class="form-select-dark">
+            <option value="">All NAICS Categories</option>
+            <option value="design">🎨 Graphic Design</option>
+            <option value="web">💻 Web & IT Services</option>
+            <option value="print">🖨️ Print Services</option>
+            <option value="brand">📊 Marketing & Brand</option>
+            <option value="marketing">📣 Advertising & Media</option>
+            <option value="translation">🌐 Translation (Spanish)</option>
+            <option value="travel">✈️ Travel Services</option>
+          </select>
+          <select id="filterState" class="form-select-dark">
+            <option value="">All States</option>
+          </select>
+          <select id="filterSetAside" class="form-select-dark">
+            <option value="">All Set-Asides</option>
+            <option value="SBA">Small Business</option>
+            <option value="8A">8(a)</option>
+            <option value="HZC">HUBZone</option>
+            <option value="SDVOSBC">Service-Disabled Veteran</option>
+            <option value="WOSB">Women-Owned SB</option>
+            <option value="SBP">Small Business Set-Aside</option>
+          </select>
+          <select id="filterDeadline" class="form-select-dark">
+            <option value="">Any Deadline</option>
+            <option value="7">Next 7 days</option>
+            <option value="14">Next 14 days</option>
+            <option value="30">Next 30 days</option>
+            <option value="60">Next 60 days</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Results -->
+      <div class="results-header">
+        <div class="results-count" id="resultsCount"></div>
+        <div>
+          <button class="btn-ghost" onclick="clearSearch()">Clear</button>
+        </div>
+      </div>
+      <div id="resultsContainer">
+        <div class="empty-state">
+          <h3>Ready to scan</h3>
+          <p>Enter keywords or select a NAICS category, then hit Search to find marketing RFPs from SAM.gov.</p>
+          <p style="font-size:0.8rem; margin-top:1rem; color:var(--koi-text-dim);">
+            💡 Tip: Try "graphic design" or select "Web & IT Services" to start.
+          </p>
+        </div>
+      </div>
+      <div id="paginationContainer" class="pagination-bar" style="display:none;"></div>
+    </section>
+
+    <!-- TAB: SAVED -->
+    <section id="tab-saved" style="display:none;">
+      <div class="search-panel" style="margin-bottom:1rem;">
+        <h2>Your Pipeline</h2>
+        <div class="filter-row">
+          <select id="filterSavedStatus" class="form-select-dark" onchange="loadSavedRFPs()">
+            <option value="">All Statuses</option>
+            <option value="saved">Saved</option>
+            <option value="reviewing">Reviewing</option>
+            <option value="bidding">Bidding</option>
+            <option value="submitted">Submitted</option>
+            <option value="won">Won</option>
+            <option value="lost">Lost</option>
+            <option value="passed">Passed</option>
+          </select>
+        </div>
+      </div>
+      <div id="savedContainer">
+        <div class="empty-state">
+          <h3>No saved RFPs yet</h3>
+          <p>Search for opportunities and click Save to add them to your pipeline.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB: SETTINGS -->
+    <section id="tab-config" style="display:none;">
+      <div class="config-panel" style="max-width:600px;">
+        <h2 style="font-size:0.75rem; text-transform:uppercase; letter-spacing:1.5px; color:var(--koi-text-dim); margin-bottom:1rem;">
+          API Configuration
+        </h2>
+        <p style="font-size:0.85rem; color:var(--koi-text-dim); margin-bottom:1.5rem;">
+          Enter your credentials to connect Black Koi 360 to SAM.gov and Supabase. These are stored only in your browser's localStorage.
+        </p>
+
+        <label>SAM.gov API Key</label>
+        <input type="password" id="cfgSamKey" class="form-control-dark" placeholder="Your SAM.gov API key">
+
+        <label>Supabase Project URL</label>
+        <input type="text" id="cfgSupabaseUrl" class="form-control-dark" placeholder="https://xxxxx.supabase.co">
+
+        <label>Supabase Anon Key</label>
+        <input type="password" id="cfgSupabaseKey" class="form-control-dark" placeholder="eyJhbGciOiJIUzI1NiIs...">
+
+        <button class="btn-koi" onclick="saveConfig()" style="width:100%;">Save Configuration</button>
+        <div id="configStatus"></div>
+
+        <hr style="border-color:var(--koi-border); margin:1.5rem 0;">
+
+        <h2 style="font-size:0.75rem; text-transform:uppercase; letter-spacing:1.5px; color:var(--koi-text-dim); margin-bottom:1rem;">
+          NAICS Code Reference
+        </h2>
+        <p style="font-size:0.85rem; color:var(--koi-text-dim); margin-bottom:1rem;">
+          These are the NAICS codes Black Koi 360 uses to filter marketing-related RFPs:
+        </p>
+        <div id="naicsReference" style="font-size:0.8rem;"></div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ===== JAVASCRIPT ===== -->
+  <script>
+    // ============================================
+    // CONFIG & STATE
+    // ============================================
+    const NAICS_MAP = {
+      design:      ['541430','541490','541921','541922'],
+      web:         ['541511','541512','541513','541519'],
+      print:       ['323111','323113','323117','323120'],
+      brand:       ['541613','541910'],
+      marketing:   ['541810','541820','541830','541840','541850','541860','541890','512110','512191'],
+      translation: ['541930'],
+      travel:      ['561510','561520','561599']
+    };
+
+    const NAICS_LABELS = {
+      '541430': 'Graphic Design Services',
+      '541490': 'Other Specialized Design Services',
+      '541511': 'Custom Computer Programming',
+      '541512': 'Computer Systems Design',
+      '541513': 'Computer Facilities Mgmt',
+      '541519': 'Other Computer Related Services',
+      '541810': 'Advertising Agencies',
+      '541820': 'Public Relations Agencies',
+      '541830': 'Media Buying Agencies',
+      '541840': 'Media Representatives',
+      '541850': 'Outdoor Advertising',
+      '541860': 'Direct Mail Advertising',
+      '541890': 'Other Advertising Services',
+      '541613': 'Marketing Consulting',
+      '541910': 'Marketing Research',
+      '323111': 'Commercial Printing',
+      '323113': 'Commercial Screen Printing',
+      '323117': 'Books Printing',
+      '323120': 'Support for Printing',
+      '512110': 'Video Production',
+      '512191': 'Teleproduction/Postproduction',
+      '541921': 'Portrait Photography',
+      '541922': 'Commercial Photography',
+      '541930': 'Translation & Interpretation Services',
+      '561510': 'Travel Agencies',
+      '561520': 'Tour Operators',
+      '561599': 'Other Travel Services'
+    };
+
+    const US_STATES = [
+      'AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA','HI','ID','IL','IN','IA','KS','KY',
+      'LA','ME','MD','MA','MI','MN','MS','MO','MT','NE','NV','NH','NJ','NM','NY','NC','ND',
+      'OH','OK','OR','PA','RI','SC','SD','TN','TX','UT','VT','VA','WA','WV','WI','WY','DC'
+    ];
+
+    const STATE_NAMES = {
+      'AL':'Alabama','AK':'Alaska','AZ':'Arizona','AR':'Arkansas','CA':'California',
+      'CO':'Colorado','CT':'Connecticut','DE':'Delaware','FL':'Florida','GA':'Georgia',
+      'HI':'Hawaii','ID':'Idaho','IL':'Illinois','IN':'Indiana','IA':'Iowa','KS':'Kansas',
+      'KY':'Kentucky','LA':'Louisiana','ME':'Maine','MD':'Maryland','MA':'Massachusetts',
+      'MI':'Michigan','MN':'Minnesota','MS':'Mississippi','MO':'Missouri','MT':'Montana',
+      'NE':'Nebraska','NV':'Nevada','NH':'New Hampshire','NJ':'New Jersey','NM':'New Mexico',
+      'NY':'New York','NC':'North Carolina','ND':'North Dakota','OH':'Ohio','OK':'Oklahoma',
+      'OR':'Oregon','PA':'Pennsylvania','RI':'Rhode Island','SC':'South Carolina',
+      'SD':'South Dakota','TN':'Tennessee','TX':'Texas','UT':'Utah','VT':'Vermont',
+      'VA':'Virginia','WA':'Washington','WV':'West Virginia','WI':'Wisconsin','WY':'Wyoming',
+      'DC':'District of Columbia'
+    };
+
+    let currentResults = [];
+    let savedIds = new Set();
+    let supabase = null;
+
+    // ============================================
+    // INITIALIZATION
+    // ============================================
+    document.addEventListener('DOMContentLoaded', () => {
+      populateStates();
+      loadConfig();
+      renderNAICSReference();
+      checkConnection();
+
+      // Enter key triggers search
+      document.getElementById('searchKeywords').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') searchRFPs();
+      });
+    });
+
+    function populateStates() {
+      const sel = document.getElementById('filterState');
+      US_STATES.forEach(s => {
+        const opt = document.createElement('option');
+        opt.value = s;
+        opt.textContent = `${s} — ${STATE_NAMES[s]}`;
+        sel.appendChild(opt);
+      });
+    }
+
+    function renderNAICSReference() {
+      const container = document.getElementById('naicsReference');
+      let html = '';
+      Object.entries(NAICS_MAP).forEach(([cat, codes]) => {
+        html += `<div style="margin-bottom:1rem;"><strong style="color:var(--koi-gold); text-transform:capitalize;">${cat}</strong><br>`;
+        codes.forEach(c => {
+          html += `<span class="tag tag-naics" style="margin:2px;">${c}</span> ${NAICS_LABELS[c] || ''}<br>`;
+        });
+        html += '</div>';
+      });
+      container.innerHTML = html;
+    }
+
+    // ============================================
+    // CONFIG MANAGEMENT
+    // ============================================
+    function loadConfig() {
+      const cfg = JSON.parse(localStorage.getItem('bk360_config') || '{}');
+      if (cfg.samKey) document.getElementById('cfgSamKey').value = cfg.samKey;
+      if (cfg.supabaseUrl) document.getElementById('cfgSupabaseUrl').value = cfg.supabaseUrl;
+      if (cfg.supabaseKey) document.getElementById('cfgSupabaseKey').value = cfg.supabaseKey;
+
+      if (cfg.supabaseUrl && cfg.supabaseKey) {
+        initSupabase(cfg.supabaseUrl, cfg.supabaseKey);
+      }
+    }
+
+    function saveConfig() {
+      const cfg = {
+        samKey: document.getElementById('cfgSamKey').value.trim(),
+        supabaseUrl: document.getElementById('cfgSupabaseUrl').value.trim(),
+        supabaseKey: document.getElementById('cfgSupabaseKey').value.trim()
+      };
+      localStorage.setItem('bk360_config', JSON.stringify(cfg));
+
+      const statusEl = document.getElementById('configStatus');
+
+      if (!cfg.samKey) {
+        statusEl.innerHTML = '<div class="config-status error">⚠️ SAM.gov API key is required to search RFPs.</div>';
+        return;
+      }
+
+      if (cfg.supabaseUrl && cfg.supabaseKey) {
+        initSupabase(cfg.supabaseUrl, cfg.supabaseKey);
+      }
+
+      statusEl.innerHTML = '<div class="config-status success">✅ Configuration saved. Connection updated.</div>';
+      checkConnection();
+    }
+
+    function initSupabase(url, key) {
+      // Minimal Supabase client (REST only, no SDK needed for MVP)
+      supabase = { url: url.replace(/\/$/, ''), key };
+      loadSavedIds();
+    }
+
+    // ============================================
+    // SUPABASE REST HELPERS
+    // ============================================
+    async function supabaseGet(table, params = '') {
+      if (!supabase) return null;
+      try {
+        const res = await fetch(`${supabase.url}/rest/v1/${table}?${params}`, {
+          headers: {
+            'apikey': supabase.key,
+            'Authorization': `Bearer ${supabase.key}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        if (!res.ok) throw new Error(`${res.status}`);
+        return await res.json();
+      } catch (e) {
+        console.error(`Supabase GET ${table}:`, e);
+        return null;
+      }
+    }
+
+    async function supabasePost(table, data) {
+      if (!supabase) return null;
+      try {
+        const res = await fetch(`${supabase.url}/rest/v1/${table}`, {
+          method: 'POST',
+          headers: {
+            'apikey': supabase.key,
+            'Authorization': `Bearer ${supabase.key}`,
+            'Content-Type': 'application/json',
+            'Prefer': 'return=representation'
+          },
+          body: JSON.stringify(data)
+        });
+        if (!res.ok) throw new Error(`${res.status}`);
+        return await res.json();
+      } catch (e) {
+        console.error(`Supabase POST ${table}:`, e);
+        return null;
+      }
+    }
+
+    async function supabasePatch(table, matchCol, matchVal, data) {
+      if (!supabase) return null;
+      try {
+        const res = await fetch(`${supabase.url}/rest/v1/${table}?${matchCol}=eq.${encodeURIComponent(matchVal)}`, {
+          method: 'PATCH',
+          headers: {
+            'apikey': supabase.key,
+            'Authorization': `Bearer ${supabase.key}`,
+            'Content-Type': 'application/json',
+            'Prefer': 'return=representation'
+          },
+          body: JSON.stringify(data)
+        });
+        if (!res.ok) throw new Error(`${res.status}`);
+        return await res.json();
+      } catch (e) {
+        console.error(`Supabase PATCH ${table}:`, e);
+        return null;
+      }
+    }
+
+    async function supabaseDelete(table, matchCol, matchVal) {
+      if (!supabase) return null;
+      try {
+        const res = await fetch(`${supabase.url}/rest/v1/${table}?${matchCol}=eq.${encodeURIComponent(matchVal)}`, {
+          method: 'DELETE',
+          headers: {
+            'apikey': supabase.key,
+            'Authorization': `Bearer ${supabase.key}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        return res.ok;
+      } catch (e) {
+        console.error(`Supabase DELETE ${table}:`, e);
+        return false;
+      }
+    }
+
+    // ============================================
+    // CONNECTION CHECK
+    // ============================================
+    async function checkConnection() {
+      const dot = document.getElementById('connectionDot');
+      const text = document.getElementById('connectionText');
+      const cfg = JSON.parse(localStorage.getItem('bk360_config') || '{}');
+
+      if (!cfg.samKey) {
+        dot.className = 'status-dot disconnected';
+        text.textContent = 'No API key — go to Settings';
+        return;
+      }
+
+      // Check if we can at least verify SAM key format
+      if (cfg.samKey.length < 10) {
+        dot.className = 'status-dot disconnected';
+        text.textContent = 'Invalid API key';
+        return;
+      }
+
+      dot.className = 'status-dot';
+      text.textContent = cfg.supabaseUrl ? 'SAM.gov + Supabase connected' : 'SAM.gov ready (no Supabase)';
+    }
+
+    // ============================================
+    // SEARCH SAM.GOV
+    // ============================================
+    async function searchRFPs(page = 0) {
+      const cfg = JSON.parse(localStorage.getItem('bk360_config') || '{}');
+
+      if (!cfg.samKey) {
+        alert('Please add your SAM.gov API key in Settings first.');
+        switchTab('config');
+        return;
+      }
+
+      const keywords = document.getElementById('searchKeywords').value.trim();
+      const naicsCategory = document.getElementById('filterNAICS').value;
+      const stateFilter = document.getElementById('filterState').value;
+      const setAside = document.getElementById('filterSetAside').value;
+      const deadlineDays = document.getElementById('filterDeadline').value;
+
+      // Build NAICS code list - only if category selected
+      let naicsCodes = [];
+      if (naicsCategory) {
+        naicsCodes = NAICS_MAP[naicsCategory] || [];
+      }
+      // Don't send all NAICS codes by default - let keyword search work freely
+
+      // Show loading
+      const container = document.getElementById('resultsContainer');
+      container.innerHTML = '<div class="empty-state"><div class="loading-spinner"></div><p style="margin-top:1rem;">Searching SAM.gov...</p></div>';
+
+      // Build SAM.gov API URL
+      // API docs: https://open.gsa.gov/api/get-opportunities-public-api/
+      const params = new URLSearchParams();
+      params.set('api_key', cfg.samKey);
+      params.set('limit', '25');
+      params.set('offset', String(page * 25));
+      params.set('postedFrom', formatDateSAM(daysAgo(180)));  // 6 months back (API limit)
+      params.set('postedTo', formatDateSAM(new Date()));
+      
+      // Keyword search - use 'keyword' for broader search (not just title)
+      if (keywords) params.set('keyword', keywords);
+      
+      // NAICS filter only if category selected
+      if (naicsCodes.length) {
+        // Send first NAICS code only - API may not handle comma-separated well
+        params.set('ncode', naicsCodes[0]);
+      }
+      
+      if (stateFilter) params.set('state', stateFilter);
+      if (setAside) params.set('typeOfSetAside', setAside);
+
+      // Deadline filter
+      if (deadlineDays) {
+        const futureDate = new Date();
+        futureDate.setDate(futureDate.getDate() + parseInt(deadlineDays));
+        params.set('rdlfrom', formatDateSAM(new Date()));
+        params.set('rdlto', formatDateSAM(futureDate));
+      }
+
+      // Don't restrict ptype - get all types, filter expired client-side
+
+      try {
+        const url = `https://api.sam.gov/prod/opportunities/v2/search?${params.toString()}`;
+        console.log('SAM.gov API URL:', url.replace(cfg.samKey, 'API_KEY_HIDDEN'));
+        
+        const res = await fetch(url);
+        console.log('SAM.gov response status:', res.status);
+        
+        if (!res.ok) {
+          const errText = await res.text();
+          console.error('SAM.gov error response:', errText);
+          throw new Error(`SAM.gov returned ${res.status}: ${errText}`);
+        }
+
+        const data = await res.json();
+        console.log('SAM.gov data:', data);
+        
+        let opps = data.opportunitiesData || [];
+        const totalFromAPI = data.totalRecords || 0;
+
+        // Filter out expired opportunities (deadline has passed)
+        const now = new Date();
+        opps = opps.filter(opp => {
+          if (!opp.responseDeadLine) return true; // Keep if no deadline specified
+          const deadline = new Date(opp.responseDeadLine);
+          return deadline >= now;
+        });
+        
+        const total = opps.length; // Use filtered count for display
+        console.log(`Filtered: ${opps.length} active from ${totalFromAPI} total`);
+
+        if (opps.length === 0 && totalFromAPI === 0) {
+          console.log('No results from SAM.gov API');
+        }
+
+        currentResults = opps;
+        renderResults(opps, total, page);
+
+        // Log search to Supabase
+        if (supabase) {
+          supabasePost('search_history', {
+            query_keywords: keywords || null,
+            naics_codes: naicsCodes.length ? naicsCodes : null,
+            state_filter: stateFilter || null,
+            results_count: total
+          });
+        }
+
+      } catch (err) {
+        console.error('Search error:', err);
+        
+        // Show error details, not just demo mode
+        const errorBanner = document.createElement('div');
+        errorBanner.style.cssText = 'background:rgba(220,53,69,0.1);border:1px solid #dc3545;border-radius:6px;padding:0.75rem 1rem;margin-bottom:1rem;font-size:0.85rem;color:#dc3545;';
+        errorBanner.innerHTML = `⚠️ <strong>API Error:</strong> ${err.message}<br><small>Check browser console (F12) for details. Showing demo data below.</small>`;
+        container.innerHTML = '';
+        container.appendChild(errorBanner);
+        
+        // Fallback to demo mode
+        const demoOpps = getDemoData(keywords, naicsCategory, stateFilter);
+        currentResults = demoOpps;
+        renderResults(demoOpps, demoOpps.length, 0);
+
+        // Show demo banner
+        const banner = document.createElement('div');
+        banner.style.cssText = 'background:rgba(212,168,83,0.1);border:1px solid var(--koi-gold-dim);border-radius:6px;padding:0.75rem 1rem;margin-bottom:1rem;font-size:0.85rem;color:var(--koi-gold);';
+        banner.innerHTML = '⚠️ <strong>Demo Mode</strong> — SAM.gov API is currently down (endpoint suspended). Showing sample data so you can test the full workflow. Real data will load automatically when the API is back online.';
+        container.insertBefore(banner, container.firstChild);
+      }
+    }
+
+    // ============================================
+    // DEMO DATA (used when SAM.gov API is unavailable)
+    // ============================================
+    function getDemoData(keywords, category, state) {
+      const demoRFPs = [
+        {
+          noticeId: 'DEMO-001-2026',
+          title: 'Graphic Design and Visual Communication Support Services',
+          fullParentPathName: 'Department of Health and Human Services / CDC',
+          departmentName: 'HHS',
+          postedDate: '2026-01-28',
+          responseDeadLine: '2026-02-28T17:00:00-05:00',
+          naicsCode: '541430',
+          typeOfSetAsideDescription: 'Small Business Set-Aside',
+          placeOfPerformance: { state: { code: 'GA' } },
+          description: 'The CDC seeks a contractor to provide graphic design and visual communication support services including infographic creation, publication layout, branding materials, and digital media design for public health campaigns.'
+        },
+        {
+          noticeId: 'DEMO-002-2026',
+          title: 'Web Design and Development Services for Public-Facing Portal',
+          fullParentPathName: 'Department of Veterans Affairs',
+          departmentName: 'VA',
+          postedDate: '2026-01-25',
+          responseDeadLine: '2026-03-15T14:00:00-05:00',
+          naicsCode: '541511',
+          typeOfSetAsideDescription: 'Service-Disabled Veteran-Owned Small Business',
+          placeOfPerformance: { state: { code: 'DC' } },
+          description: 'The VA requires web design and development services for a new public-facing portal. Work includes UX/UI design, responsive development, accessibility compliance (Section 508), content management system integration, and ongoing maintenance.'
+        },
+        {
+          noticeId: 'DEMO-003-2026',
+          title: 'Brand Identity and Marketing Strategy Development',
+          fullParentPathName: 'Small Business Administration',
+          departmentName: 'SBA',
+          postedDate: '2026-02-01',
+          responseDeadLine: '2026-03-01T12:00:00-05:00',
+          naicsCode: '541613',
+          typeOfSetAsideDescription: 'Total Small Business Set-Aside',
+          placeOfPerformance: { state: { code: 'DC' } },
+          description: 'SBA seeks a marketing firm to develop comprehensive brand identity guidelines, marketing strategy, social media campaigns, and outreach materials for a national small business initiative launching in 2026.'
+        },
+        {
+          noticeId: 'DEMO-004-2026',
+          title: 'Commercial Printing Services — Annual Reports and Publications',
+          fullParentPathName: 'Government Publishing Office',
+          departmentName: 'GPO',
+          postedDate: '2026-01-20',
+          responseDeadLine: '2026-02-20T16:00:00-05:00',
+          naicsCode: '323111',
+          typeOfSetAsideDescription: '',
+          placeOfPerformance: { state: { code: 'MD' } },
+          description: 'Blanket Purchase Agreement for commercial printing services including annual reports, brochures, posters, and educational publications. Estimated 500,000 units annually across multiple product types.'
+        },
+        {
+          noticeId: 'DEMO-005-2026',
+          title: 'Multimedia Production and Video Services',
+          fullParentPathName: 'Department of Education',
+          departmentName: 'ED',
+          postedDate: '2026-02-03',
+          responseDeadLine: '2026-03-20T17:00:00-05:00',
+          naicsCode: '512110',
+          typeOfSetAsideDescription: 'Small Business Set-Aside',
+          placeOfPerformance: { state: { code: 'DC' } },
+          description: 'The Department of Education requires multimedia production services including video production, motion graphics, animation, podcast production, and photography for educational outreach campaigns targeting K-12 audiences.'
+        },
+        {
+          noticeId: 'DEMO-006-2026',
+          title: 'Digital Advertising and Social Media Management',
+          fullParentPathName: 'Department of Commerce / International Trade Administration',
+          departmentName: 'DOC',
+          postedDate: '2026-01-30',
+          responseDeadLine: '2026-03-10T14:00:00-05:00',
+          naicsCode: '541810',
+          typeOfSetAsideDescription: '8(a) Set-Aside',
+          placeOfPerformance: { state: { code: 'DC' } },
+          description: 'Digital advertising campaign management including paid social media, Google Ads, programmatic display, email marketing campaigns, and analytics reporting for trade promotion programs.'
+        },
+        {
+          noticeId: 'DEMO-007-2026',
+          title: 'UX/UI Design Services for Mobile Application',
+          fullParentPathName: 'Department of Homeland Security / FEMA',
+          departmentName: 'DHS',
+          postedDate: '2026-02-02',
+          responseDeadLine: '2026-03-25T17:00:00-05:00',
+          naicsCode: '541512',
+          typeOfSetAsideDescription: 'Small Business Set-Aside',
+          placeOfPerformance: { state: { code: 'VA' } },
+          description: 'FEMA requires UX/UI design services for a public-facing mobile application for disaster preparedness. Includes user research, wireframing, prototyping, usability testing, design system creation, and handoff to development team.'
+        },
+        {
+          noticeId: 'DEMO-008-2026',
+          title: 'Public Relations and Strategic Communications Support',
+          fullParentPathName: 'Department of Energy',
+          departmentName: 'DOE',
+          postedDate: '2026-01-22',
+          responseDeadLine: '2026-02-25T16:00:00-05:00',
+          naicsCode: '541820',
+          typeOfSetAsideDescription: '',
+          placeOfPerformance: { state: { code: 'DC' } },
+          description: 'Strategic communications and public relations support services including media relations, crisis communications, speechwriting, stakeholder engagement, and communications planning for clean energy initiatives.'
+        },
+        {
+          noticeId: 'DEMO-009-2026',
+          title: 'Large Format Printing and Exhibit Design Services',
+          fullParentPathName: 'Smithsonian Institution',
+          departmentName: 'SI',
+          postedDate: '2026-02-01',
+          responseDeadLine: '2026-03-05T12:00:00-05:00',
+          naicsCode: '323113',
+          typeOfSetAsideDescription: 'Total Small Business Set-Aside',
+          placeOfPerformance: { state: { code: 'DC' } },
+          description: 'Large format printing, exhibit panel production, vinyl graphics, banners, and signage for museum exhibits and traveling displays. Includes design consultation, color proofing, installation, and deinstallation services.'
+        },
+        {
+          noticeId: 'DEMO-010-2026',
+          title: 'Marketing Research and Audience Analysis Services',
+          fullParentPathName: 'Department of Agriculture / USDA',
+          departmentName: 'USDA',
+          postedDate: '2026-01-27',
+          responseDeadLine: '2026-03-12T14:00:00-05:00',
+          naicsCode: '541910',
+          typeOfSetAsideDescription: 'Women-Owned Small Business',
+          placeOfPerformance: { state: { code: 'VA' } },
+          description: 'Marketing research services including audience segmentation, survey design and administration, focus group facilitation, data analysis, and strategic recommendations for USDA nutrition education programs.'
+        },
+        {
+          noticeId: 'DEMO-011-2026',
+          title: 'Website Redesign and Content Management System Migration',
+          fullParentPathName: 'National Aeronautics and Space Administration / NASA',
+          departmentName: 'NASA',
+          postedDate: '2026-02-03',
+          responseDeadLine: '2026-04-01T17:00:00-05:00',
+          naicsCode: '541511',
+          typeOfSetAsideDescription: 'Small Business Set-Aside',
+          placeOfPerformance: { state: { code: 'TX' } },
+          description: 'Complete redesign of a NASA center public website including information architecture, responsive design, CMS migration to Drupal, content strategy, accessibility compliance, and 12 months of post-launch support.'
+        },
+        {
+          noticeId: 'DEMO-012-2026',
+          title: 'Commercial Photography Services — Events and Portraits',
+          fullParentPathName: 'Department of State',
+          departmentName: 'DOS',
+          postedDate: '2026-01-31',
+          responseDeadLine: '2026-02-28T12:00:00-05:00',
+          naicsCode: '541922',
+          typeOfSetAsideDescription: '',
+          placeOfPerformance: { state: { code: 'DC' } },
+          description: 'Professional photography services for diplomatic events, official portraits, conference documentation, and social media content. Photographer must have experience with high-security government environments.'
+        },
+        {
+          noticeId: 'DEMO-013-2026',
+          title: 'Spanish Translation and Interpretation Services',
+          fullParentPathName: 'Department of Health and Human Services / CMS',
+          departmentName: 'HHS',
+          postedDate: '2026-01-28',
+          responseDeadLine: '2026-03-01T17:00:00-05:00',
+          naicsCode: '541930',
+          typeOfSetAsideDescription: 'Small Business Set-Aside',
+          placeOfPerformance: { state: { code: 'TX' } },
+          description: 'Spanish translation and interpretation services for Medicare/Medicaid outreach materials, patient communications, and public health campaigns targeting Hispanic communities in Texas border regions.'
+        },
+        {
+          noticeId: 'DEMO-014-2026',
+          title: 'Official Travel Management Services',
+          fullParentPathName: 'General Services Administration / FAS',
+          departmentName: 'GSA',
+          postedDate: '2026-01-25',
+          responseDeadLine: '2026-02-20T14:00:00-05:00',
+          naicsCode: '561510',
+          typeOfSetAsideDescription: 'Small Business Set-Aside',
+          placeOfPerformance: { state: { code: 'TX' } },
+          description: 'Travel agency services for federal employee official travel including domestic and international flight bookings, hotel reservations, ground transportation, and 24/7 emergency travel support. Must be registered with GSA City Pair Program.'
+        }
+      ];
+
+      // Filter by keywords
+      let filtered = demoRFPs;
+      if (keywords) {
+        const kw = keywords.toLowerCase();
+        filtered = filtered.filter(r =>
+          r.title.toLowerCase().includes(kw) ||
+          r.description.toLowerCase().includes(kw) ||
+          (NAICS_LABELS[r.naicsCode] || '').toLowerCase().includes(kw)
+        );
+      }
+
+      // Filter by NAICS category
+      if (category) {
+        const codes = NAICS_MAP[category] || [];
+        filtered = filtered.filter(r => codes.includes(r.naicsCode));
+      }
+
+      // Filter by state
+      if (state) {
+        filtered = filtered.filter(r => r.placeOfPerformance?.state?.code === state);
+      }
+
+      // If filters returned nothing, show all demo data
+      if (filtered.length === 0 && (keywords || category || state)) {
+        return demoRFPs;
+      }
+
+      return filtered;
+    }
+
+    // ============================================
+    // RENDER RESULTS
+    // ============================================
+    function renderResults(opportunities, total, page) {
+      const container = document.getElementById('resultsContainer');
+      const countEl = document.getElementById('resultsCount');
+
+      if (!opportunities.length) {
+        countEl.innerHTML = '';
+        container.innerHTML = `
+          <div class="empty-state">
+            <h3>No results found</h3>
+            <p>Try different keywords, broader NAICS categories, or remove filters.</p>
+          </div>`;
+        return;
+      }
+
+      countEl.innerHTML = `Showing <strong>${page * 25 + 1}–${page * 25 + opportunities.length}</strong> of <strong>${total}</strong> opportunities`;
+
+      container.innerHTML = opportunities.map(opp => renderRFPCard(opp)).join('');
+
+      // Pagination
+      if (total > 25) {
+        const totalPages = Math.ceil(total / 25);
+        const pag = document.getElementById('paginationContainer');
+        pag.style.display = 'flex';
+        let pagHTML = '';
+        if (page > 0) pagHTML += `<button class="btn-ghost" onclick="searchRFPs(${page - 1})">← Prev</button>`;
+        pagHTML += `<span style="color:var(--koi-text-dim); font-size:0.85rem; padding:0.4rem;">Page ${page + 1} of ${totalPages}</span>`;
+        if (page < totalPages - 1) pagHTML += `<button class="btn-ghost" onclick="searchRFPs(${page + 1})">Next →</button>`;
+        pag.innerHTML = pagHTML;
+      }
+    }
+
+    function renderRFPCard(opp) {
+      const noticeId = opp.noticeId || '';
+      const title = opp.title || 'Untitled Opportunity';
+      const agency = opp.fullParentPathName || opp.departmentName || 'Unknown Agency';
+      const postedDate = opp.postedDate || '';
+      const deadline = opp.responseDeadLine || '';
+      const description = opp.description ? stripHTML(opp.description).substring(0, 250) : '';
+      const naics = opp.naicsCode || '';
+      const state = opp.placeOfPerformance?.state?.code || '';
+      const setAside = opp.typeOfSetAsideDescription || '';
+      const samUrl = `https://sam.gov/opp/${noticeId}/view`;
+      const isSaved = savedIds.has(noticeId);
+
+      const deadlineTag = deadline ? getDeadlineTag(deadline) : '';
+
+      return `
+        <div class="rfp-card" id="card-${noticeId}">
+          <div class="rfp-card-header">
+            <div class="rfp-title">
+              <a href="${samUrl}" target="_blank" rel="noopener">${escapeHTML(title)}</a>
+            </div>
+            <button class="btn-save ${isSaved ? 'saved' : ''}" onclick="toggleSave('${noticeId}', this)" title="${isSaved ? 'Already saved' : 'Save to pipeline'}">
+              ${isSaved ? '✓ Saved' : '+ Save'}
+            </button>
+          </div>
+          <div class="rfp-meta">
+            <div class="rfp-meta-item">🏛️ ${escapeHTML(agency)}</div>
+            ${postedDate ? `<div class="rfp-meta-item">📅 Posted: ${formatDate(postedDate)}</div>` : ''}
+            ${deadline ? `<div class="rfp-meta-item">⏰ Due: ${formatDate(deadline)}</div>` : ''}
+          </div>
+          ${description ? `<div class="rfp-description">${escapeHTML(description)}</div>` : ''}
+          <div class="rfp-tags">
+            ${naics ? `<span class="tag tag-naics">${naics} ${NAICS_LABELS[naics] ? '— ' + NAICS_LABELS[naics] : ''}</span>` : ''}
+            ${deadlineTag}
+            ${setAside ? `<span class="tag tag-setaside">${escapeHTML(setAside)}</span>` : ''}
+            ${state ? `<span class="tag tag-state">${state}</span>` : ''}
+          </div>
+        </div>`;
+    }
+
+    // ============================================
+    // SAVE / UNSAVE RFP
+    // ============================================
+    async function toggleSave(noticeId, btnEl) {
+      if (!supabase) {
+        alert('Connect Supabase in Settings to save RFPs.');
+        return;
+      }
+
+      if (savedIds.has(noticeId)) {
+        // Unsave
+        const ok = await supabaseDelete('saved_rfps', 'notice_id', noticeId);
+        if (ok) {
+          savedIds.delete(noticeId);
+          btnEl.classList.remove('saved');
+          btnEl.textContent = '+ Save';
+          updateSavedCount();
+        }
+      } else {
+        // Save
+        const opp = currentResults.find(o => o.noticeId === noticeId);
+        if (!opp) return;
+
+        const record = {
+          notice_id: noticeId,
+          title: opp.title || 'Untitled',
+          agency: opp.fullParentPathName || opp.departmentName || null,
+          sub_tier: opp.subTierAgencyName || null,
+          posted_date: opp.postedDate || null,
+          response_deadline: opp.responseDeadLine || null,
+          naics_code: opp.naicsCode || null,
+          naics_description: NAICS_LABELS[opp.naicsCode] || null,
+          set_aside: opp.typeOfSetAsideDescription || null,
+          place_of_performance: opp.placeOfPerformance?.state?.code || null,
+          description: opp.description ? stripHTML(opp.description).substring(0, 500) : null,
+          sam_url: `https://sam.gov/opp/${noticeId}/view`,
+          status: 'saved'
+        };
+
+        const result = await supabasePost('saved_rfps', record);
+        if (result) {
+          savedIds.add(noticeId);
+          btnEl.classList.add('saved');
+          btnEl.textContent = '✓ Saved';
+          updateSavedCount();
+        }
+      }
+    }
+
+    async function loadSavedIds() {
+      const data = await supabaseGet('saved_rfps', 'select=notice_id');
+      if (data) {
+        savedIds = new Set(data.map(r => r.notice_id));
+        updateSavedCount();
+      }
+    }
+
+    function updateSavedCount() {
+      const el = document.getElementById('savedCount');
+      el.textContent = savedIds.size ? `(${savedIds.size})` : '';
+    }
+
+    // ============================================
+    // SAVED RFPS TAB
+    // ============================================
+    async function loadSavedRFPs() {
+      if (!supabase) {
+        document.getElementById('savedContainer').innerHTML = `
+          <div class="empty-state">
+            <h3>Supabase not connected</h3>
+            <p>Go to Settings and add your Supabase credentials to use the save feature.</p>
+          </div>`;
+        return;
+      }
+
+      const statusFilter = document.getElementById('filterSavedStatus').value;
+      let query = 'select=*&order=saved_at.desc';
+      if (statusFilter) query += `&status=eq.${statusFilter}`;
+
+      const data = await supabaseGet('saved_rfps', query);
+      const container = document.getElementById('savedContainer');
+
+      if (!data || !data.length) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <h3>No saved RFPs${statusFilter ? ' with status "' + statusFilter + '"' : ''}</h3>
+            <p>Search for opportunities and click Save to add them here.</p>
+          </div>`;
+        return;
+      }
+
+      container.innerHTML = data.map(rfp => renderSavedCard(rfp)).join('');
+    }
+
+    function renderSavedCard(rfp) {
+      return `
+        <div class="rfp-card" id="saved-${rfp.notice_id}">
+          <div class="rfp-card-header">
+            <div class="rfp-title">
+              <a href="${rfp.sam_url}" target="_blank" rel="noopener">${escapeHTML(rfp.title)}</a>
+            </div>
+            <div style="display:flex; gap:0.5rem; align-items:center;">
+              <select class="form-select-dark" style="font-size:0.75rem; padding:0.25rem 0.5rem; width:auto;"
+                      onchange="updateStatus('${rfp.notice_id}', this.value)">
+                ${['saved','reviewing','bidding','submitted','won','lost','passed'].map(s => 
+                  `<option value="${s}" ${rfp.status === s ? 'selected' : ''}>${s.charAt(0).toUpperCase() + s.slice(1)}</option>`
+                ).join('')}
+              </select>
+              <span class="status-badge status-${rfp.status}">${rfp.status}</span>
+            </div>
+          </div>
+          <div class="rfp-meta">
+            <div class="rfp-meta-item">🏛️ ${escapeHTML(rfp.agency || 'Unknown')}</div>
+            ${rfp.response_deadline ? `<div class="rfp-meta-item">⏰ Due: ${formatDate(rfp.response_deadline)}</div>` : ''}
+            ${rfp.naics_code ? `<div class="rfp-meta-item">📋 ${rfp.naics_code}</div>` : ''}
+            ${rfp.place_of_performance ? `<div class="rfp-meta-item">📍 ${rfp.place_of_performance}</div>` : ''}
+          </div>
+          ${rfp.description ? `<div class="rfp-description">${escapeHTML(rfp.description)}</div>` : ''}
+          <div style="margin-top:0.75rem;">
+            <textarea class="notes-area" placeholder="Add notes..." 
+                      onblur="updateNotes('${rfp.notice_id}', this.value)">${escapeHTML(rfp.notes || '')}</textarea>
+          </div>
+          <div style="margin-top:0.5rem; text-align:right;">
+            <button class="btn-ghost" style="color:var(--koi-red); border-color:var(--koi-red);" 
+                    onclick="removeSaved('${rfp.notice_id}')">Remove</button>
+          </div>
+        </div>`;
+    }
+
+    async function updateStatus(noticeId, newStatus) {
+      await supabasePatch('saved_rfps', 'notice_id', noticeId, { status: newStatus });
+      // Update badge
+      const card = document.getElementById(`saved-${noticeId}`);
+      if (card) {
+        const badge = card.querySelector('.status-badge');
+        if (badge) {
+          badge.className = `status-badge status-${newStatus}`;
+          badge.textContent = newStatus;
+        }
+      }
+    }
+
+    async function updateNotes(noticeId, notes) {
+      await supabasePatch('saved_rfps', 'notice_id', noticeId, { notes });
+    }
+
+    async function removeSaved(noticeId) {
+      if (!confirm('Remove this RFP from your pipeline?')) return;
+      const ok = await supabaseDelete('saved_rfps', 'notice_id', noticeId);
+      if (ok) {
+        savedIds.delete(noticeId);
+        updateSavedCount();
+        document.getElementById(`saved-${noticeId}`)?.remove();
+      }
+    }
+
+    // ============================================
+    // TAB NAVIGATION
+    // ============================================
+    function switchTab(tab) {
+      document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+      document.querySelector(`[data-tab="${tab}"]`).classList.add('active');
+
+      document.getElementById('tab-search').style.display = tab === 'search' ? 'block' : 'none';
+      document.getElementById('tab-saved').style.display = tab === 'saved' ? 'block' : 'none';
+      document.getElementById('tab-config').style.display = tab === 'config' ? 'block' : 'none';
+
+      if (tab === 'saved') loadSavedRFPs();
+    }
+
+    function clearSearch() {
+      document.getElementById('searchKeywords').value = '';
+      document.getElementById('filterNAICS').value = '';
+      document.getElementById('filterState').value = '';
+      document.getElementById('filterSetAside').value = '';
+      document.getElementById('filterDeadline').value = '';
+      document.getElementById('resultsCount').innerHTML = '';
+      document.getElementById('paginationContainer').style.display = 'none';
+      document.getElementById('resultsContainer').innerHTML = `
+        <div class="empty-state">
+          <h3>Ready to scan</h3>
+          <p>Enter keywords or select a NAICS category, then hit Search to find marketing RFPs from SAM.gov.</p>
+        </div>`;
+    }
+
+    // ============================================
+    // UTILITY FUNCTIONS
+    // ============================================
+    function escapeHTML(str) {
+      if (!str) return '';
+      return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    function stripHTML(str) {
+      const tmp = document.createElement('div');
+      tmp.innerHTML = str;
+      return tmp.textContent || tmp.innerText || '';
+    }
+
+    function formatDate(dateStr) {
+      if (!dateStr) return '';
+      try {
+        const d = new Date(dateStr);
+        return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      } catch { return dateStr; }
+    }
+
+    function formatDateSAM(date) {
+      // SAM.gov expects MM/dd/yyyy
+      const m = String(date.getMonth() + 1).padStart(2, '0');
+      const d = String(date.getDate()).padStart(2, '0');
+      return `${m}/${d}/${date.getFullYear()}`;
+    }
+
+    function daysAgo(n) {
+      const d = new Date();
+      d.setDate(d.getDate() - n);
+      return d;
+    }
+
+    function getDeadlineTag(deadlineStr) {
+      try {
+        const deadline = new Date(deadlineStr);
+        const now = new Date();
+        const diffDays = Math.ceil((deadline - now) / (1000 * 60 * 60 * 24));
+
+        if (diffDays < 0) return '<span class="tag tag-deadline">EXPIRED</span>';
+        if (diffDays <= 7) return `<span class="tag tag-deadline">${diffDays}d left</span>`;
+        if (diffDays <= 14) return `<span class="tag tag-deadline">${diffDays}d left</span>`;
+        return `<span class="tag tag-deadline safe">${diffDays}d left</span>`;
+      } catch { return ''; }
+    }
+  </script>
+
+</body>
+</html>
