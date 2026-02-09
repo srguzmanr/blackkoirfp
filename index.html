@@ -418,6 +418,30 @@
 
     .notes-area:focus { outline: none; border-color: var(--koi-gold); }
 
+    /* --- SOURCE TOGGLE --- */
+    .source-toggle {
+      background: var(--koi-dark);
+      border: 1px solid var(--koi-border);
+      color: var(--koi-text-dim);
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .source-toggle:hover {
+      border-color: var(--koi-gold);
+      color: var(--koi-text);
+    }
+    
+    .source-toggle.active {
+      background: var(--koi-gold);
+      border-color: var(--koi-gold);
+      color: var(--koi-black);
+    }
+
     /* --- TOOLTIP --- */
     .koi-tooltip {
       position: relative;
@@ -472,12 +496,21 @@
     <!-- TAB: SEARCH -->
     <section id="tab-search">
       <div class="search-panel">
-        <h2>Search Federal Opportunities</h2>
+        <!-- SOURCE TOGGLE -->
+        <div style="display:flex; gap:0.5rem; margin-bottom:1rem;">
+          <button class="source-toggle active" data-source="federal" onclick="setSource('federal')">
+            🏛️ Federal (SAM.gov)
+          </button>
+          <button class="source-toggle" data-source="mcallen" onclick="setSource('mcallen')">
+            🏙️ McAllen
+          </button>
+        </div>
+        <h2 id="searchPanelTitle">Search Federal Opportunities</h2>
         <div class="search-row">
           <input type="text" id="searchKeywords" class="form-control-dark" 
                  placeholder="Keywords: graphic design, branding, web development, print services...">
           <button class="btn-koi" id="searchBtn" onclick="searchRFPs()">
-            Search SAM.gov
+            Search
           </button>
         </div>
         <div class="filter-row">
@@ -659,6 +692,7 @@
     let currentResults = [];
     let savedIds = new Set();
     let supabase = null;
+    let currentSource = 'federal';  // 'federal' or 'mcallen'
 
     // ============================================
     // INITIALIZATION
@@ -848,9 +882,37 @@
     }
 
     // ============================================
+    // SOURCE SWITCHING
+    // ============================================
+    function setSource(source) {
+      currentSource = source;
+      document.querySelectorAll('.source-toggle').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.source === source);
+      });
+      
+      const title = document.getElementById('searchPanelTitle');
+      const filters = document.querySelector('.filter-row');
+      
+      if (source === 'federal') {
+        title.textContent = 'Search Federal Opportunities';
+        filters.style.display = 'grid';
+      } else {
+        title.textContent = 'Search McAllen Opportunities';
+        filters.style.display = 'none';  // McAllen doesn't use SAM filters
+      }
+      
+      clearSearch();
+    }
+
+    // ============================================
     // SEARCH SAM.GOV
     // ============================================
     async function searchRFPs(page = 0) {
+      // Route to appropriate search based on source
+      if (currentSource === 'mcallen') {
+        return searchLocalBids();
+      }
+      
       const cfg = JSON.parse(localStorage.getItem('bk360_config') || '{}');
 
       if (!cfg.samKey) {
@@ -1245,6 +1307,110 @@
     }
 
     // ============================================
+    // SEARCH LOCAL BIDS (McAllen, etc.)
+    // ============================================
+    async function searchLocalBids() {
+      if (!supabase) {
+        alert('Please configure Supabase in Settings first.');
+        switchTab('config');
+        return;
+      }
+
+      const keywords = document.getElementById('searchKeywords').value.trim().toLowerCase();
+      const container = document.getElementById('resultsContainer');
+      const countEl = document.getElementById('resultsCount');
+      const btn = document.getElementById('searchBtn');
+
+      btn.disabled = true;
+      btn.textContent = 'Searching...';
+      container.innerHTML = '<div class="loading">Fetching McAllen opportunities...</div>';
+
+      try {
+        // Fetch all open bids from local_bids for McAllen
+        let query = 'select=*,local_sources(name,slug)&status=eq.Open for Bidding&order=due_date.asc.nullslast';
+        const data = await supabaseGet('local_bids', query);
+
+        if (!data || !data.length) {
+          container.innerHTML = `
+            <div class="empty-state">
+              <h3>No open bids found</h3>
+              <p>Run the McAllen scraper to sync the latest opportunities.</p>
+            </div>`;
+          countEl.innerHTML = '';
+          return;
+        }
+
+        // Filter by keywords if provided
+        let results = data;
+        if (keywords) {
+          results = data.filter(bid => 
+            (bid.title && bid.title.toLowerCase().includes(keywords)) ||
+            (bid.bid_number && bid.bid_number.toLowerCase().includes(keywords)) ||
+            (bid.bid_type && bid.bid_type.toLowerCase().includes(keywords))
+          );
+        }
+
+        if (!results.length) {
+          container.innerHTML = `
+            <div class="empty-state">
+              <h3>No matches for "${escapeHTML(keywords)}"</h3>
+              <p>Try different keywords or clear the search.</p>
+            </div>`;
+          countEl.innerHTML = '';
+          return;
+        }
+
+        countEl.innerHTML = `Showing <strong>${results.length}</strong> McAllen opportunities`;
+        container.innerHTML = results.map(bid => renderLocalCard(bid)).join('');
+
+      } catch (err) {
+        console.error('Local search error:', err);
+        container.innerHTML = `
+          <div class="empty-state">
+            <h3>Search failed</h3>
+            <p>${escapeHTML(err.message)}</p>
+          </div>`;
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Search';
+      }
+    }
+
+    function renderLocalCard(bid) {
+      const bidId = bid.id || '';
+      const title = bid.title || 'Untitled Bid';
+      const bidNumber = bid.bid_number || '';
+      const bidType = bid.bid_type || '';
+      const status = bid.status || '';
+      const dueDate = bid.due_date || '';
+      const postedDate = bid.posted_date || '';
+      const url = bid.url || '#';
+      const sourceName = bid.local_sources?.name || 'McAllen';
+
+      const deadlineTag = dueDate ? getDeadlineTag(dueDate) : '';
+
+      return `
+        <div class="rfp-card" id="local-${bidId}">
+          <div class="rfp-card-header">
+            <div class="rfp-title">
+              <a href="${escapeHTML(url)}" target="_blank" rel="noopener">${escapeHTML(title)}</a>
+            </div>
+            <span class="tag" style="background:var(--koi-blue); color:white;">🏙️ ${escapeHTML(sourceName)}</span>
+          </div>
+          <div class="rfp-meta">
+            ${bidNumber ? `<div class="rfp-meta-item">📋 ${escapeHTML(bidNumber)}</div>` : ''}
+            ${bidType ? `<div class="rfp-meta-item">📄 ${escapeHTML(bidType)}</div>` : ''}
+            ${postedDate ? `<div class="rfp-meta-item">📅 Posted: ${formatDate(postedDate)}</div>` : ''}
+            ${dueDate ? `<div class="rfp-meta-item">⏰ Due: ${formatDate(dueDate)}</div>` : ''}
+          </div>
+          <div class="rfp-tags">
+            ${deadlineTag}
+            ${status ? `<span class="tag tag-setaside">${escapeHTML(status)}</span>` : ''}
+          </div>
+        </div>`;
+    }
+
+    // ============================================
     // SAVE / UNSAVE RFP
     // ============================================
     async function toggleSave(noticeId, btnEl) {
@@ -1422,10 +1588,15 @@
       document.getElementById('filterDeadline').value = '';
       document.getElementById('resultsCount').innerHTML = '';
       document.getElementById('paginationContainer').style.display = 'none';
+      
+      const msg = currentSource === 'federal' 
+        ? 'Enter keywords or select a NAICS category, then hit Search to find marketing RFPs from SAM.gov.'
+        : 'Enter keywords to search McAllen bids, or just hit Search to see all open opportunities.';
+      
       document.getElementById('resultsContainer').innerHTML = `
         <div class="empty-state">
           <h3>Ready to scan</h3>
-          <p>Enter keywords or select a NAICS category, then hit Search to find marketing RFPs from SAM.gov.</p>
+          <p>${msg}</p>
         </div>`;
     }
 
