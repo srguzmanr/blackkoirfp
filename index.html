@@ -497,12 +497,21 @@
     <section id="tab-search">
       <div class="search-panel">
         <!-- SOURCE TOGGLE -->
-        <div style="display:flex; gap:0.5rem; margin-bottom:1rem;">
+        <div style="display:flex; gap:0.5rem; margin-bottom:1rem; flex-wrap:wrap;">
           <button class="source-toggle active" data-source="federal" onclick="setSource('federal')">
-            🏛️ Federal (SAM.gov)
+            🏛️ Federal
+          </button>
+          <button class="source-toggle" data-source="local-all" onclick="setSource('local-all')">
+            🏙️ All Local
           </button>
           <button class="source-toggle" data-source="mcallen" onclick="setSource('mcallen')">
-            🏙️ McAllen
+            McAllen
+          </button>
+          <button class="source-toggle" data-source="pharr" onclick="setSource('pharr')">
+            Pharr
+          </button>
+          <button class="source-toggle" data-source="mission" onclick="setSource('mission')">
+            Mission
           </button>
         </div>
         <h2 id="searchPanelTitle">Search Federal Opportunities</h2>
@@ -896,9 +905,13 @@
       if (source === 'federal') {
         title.textContent = 'Search Federal Opportunities';
         filters.style.display = 'grid';
+      } else if (source === 'local-all') {
+        title.textContent = 'Search All Local Opportunities';
+        filters.style.display = 'none';
       } else {
-        title.textContent = 'Search McAllen Opportunities';
-        filters.style.display = 'none';  // McAllen doesn't use SAM filters
+        const cityNames = { mcallen: 'McAllen', pharr: 'Pharr', mission: 'Mission' };
+        title.textContent = `Search ${cityNames[source] || source} Opportunities`;
+        filters.style.display = 'none';
       }
       
       clearSearch();
@@ -909,7 +922,7 @@
     // ============================================
     async function searchRFPs(page = 0) {
       // Route to appropriate search based on source
-      if (currentSource === 'mcallen') {
+      if (currentSource !== 'federal') {
         return searchLocalBids();
       }
       
@@ -1307,7 +1320,7 @@
     }
 
     // ============================================
-    // SEARCH LOCAL BIDS (McAllen, etc.)
+    // SEARCH LOCAL BIDS (McAllen, Pharr, Mission, etc.)
     // ============================================
     async function searchLocalBids() {
       if (!supabase) {
@@ -1321,20 +1334,32 @@
       const countEl = document.getElementById('resultsCount');
       const btn = document.getElementById('searchBtn');
 
+      const cityNames = { mcallen: 'McAllen', pharr: 'Pharr', mission: 'Mission', 'local-all': 'RGV' };
+      const sourceLabel = cityNames[currentSource] || currentSource;
+
       btn.disabled = true;
       btn.textContent = 'Searching...';
-      container.innerHTML = '<div class="loading">Fetching McAllen opportunities...</div>';
+      container.innerHTML = `<div class="loading">Fetching ${sourceLabel} opportunities...</div>`;
 
       try {
-        // Fetch all open bids from local_bids for McAllen
+        // Build query - join with sources table
         let query = 'select=*,local_sources(name,slug)&order=due_date.asc.nullslast';
+        
+        // Filter by specific city if not "all local"
+        if (currentSource !== 'local-all') {
+          const sourceData = await supabaseGet('local_sources', `slug=eq.${currentSource}&select=id`);
+          if (sourceData && sourceData.length > 0) {
+            query += `&source_id=eq.${sourceData[0].id}`;
+          }
+        }
+        
         const data = await supabaseGet('local_bids', query);
 
         if (!data || !data.length) {
           container.innerHTML = `
             <div class="empty-state">
               <h3>No open bids found</h3>
-              <p>Run the McAllen scraper to sync the latest opportunities.</p>
+              <p>Run the sync bookmarklet for ${sourceLabel} to fetch the latest opportunities.</p>
             </div>`;
           countEl.innerHTML = '';
           return;
@@ -1360,7 +1385,7 @@
           return;
         }
 
-        countEl.innerHTML = `Showing <strong>${results.length}</strong> McAllen opportunities`;
+        countEl.innerHTML = `Showing <strong>${results.length}</strong> ${sourceLabel} opportunities`;
         container.innerHTML = results.map(bid => renderLocalCard(bid)).join('');
 
       } catch (err) {
@@ -1589,9 +1614,14 @@
       document.getElementById('resultsCount').innerHTML = '';
       document.getElementById('paginationContainer').style.display = 'none';
       
-      const msg = currentSource === 'federal' 
-        ? 'Enter keywords or select a NAICS category, then hit Search to find marketing RFPs from SAM.gov.'
-        : 'Enter keywords to search McAllen bids, or just hit Search to see all open opportunities.';
+      const cityNames = { mcallen: 'McAllen', pharr: 'Pharr', mission: 'Mission', 'local-all': 'RGV' };
+      let msg;
+      if (currentSource === 'federal') {
+        msg = 'Enter keywords or select a NAICS category, then hit Search to find marketing RFPs from SAM.gov.';
+      } else {
+        const label = cityNames[currentSource] || currentSource;
+        msg = `Enter keywords to search ${label} bids, or just hit Search to see all open opportunities.`;
+      }
       
       document.getElementById('resultsContainer').innerHTML = `
         <div class="empty-state">
