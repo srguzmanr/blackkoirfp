@@ -1327,7 +1327,7 @@
 
       try {
         // Fetch all open bids from local_bids for McAllen
-        let query = 'select=*,local_sources(name,slug)&status=eq.Open for Bidding&order=due_date.asc.nullslast';
+        let query = 'select=*,local_sources(name,slug)&order=due_date.asc.nullslast';
         const data = await supabaseGet('local_bids', query);
 
         if (!data || !data.length) {
