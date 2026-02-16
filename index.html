@@ -441,7 +441,71 @@
       border-color: var(--koi-gold);
       color: var(--koi-black);
     }
+    
+/* --- SOURCE DROPDOWN --- */
+    .source-group {
+      position: relative;
+      display: inline-block;
+    }
 
+    .source-dropdown {
+      display: none;
+      position: absolute;
+      top: 100%;
+      left: 0;
+      margin-top: 0.35rem;
+      background: var(--koi-surface);
+      border: 1px solid var(--koi-border);
+      border-radius: 6px;
+      min-width: 220px;
+      z-index: 50;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+      padding: 0.35rem 0;
+    }
+
+    .source-group.open .source-dropdown { display: block; }
+
+    .source-dropdown-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      padding: 0.55rem 1rem;
+      background: none;
+      border: none;
+      color: var(--koi-text-dim);
+      font-size: 0.85rem;
+      font-family: 'DM Sans', sans-serif;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .source-dropdown-item:hover {
+      background: var(--koi-dark);
+      color: var(--koi-text);
+    }
+
+    .source-dropdown-item.active {
+      color: var(--koi-gold);
+      font-weight: 600;
+    }
+
+    .source-dropdown-divider {
+      height: 1px;
+      background: var(--koi-border);
+      margin: 0.25rem 0;
+    }
+
+    .bid-count-badge {
+      background: var(--koi-dark);
+      color: var(--koi-gold);
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.1rem 0.45rem;
+      border-radius: 10px;
+      min-width: 1.4rem;
+      text-align: center;
+    }
     /* --- TOOLTIP --- */
     .koi-tooltip {
       position: relative;
@@ -497,28 +561,43 @@
     <section id="tab-search">
       <div class="search-panel">
         <!-- SOURCE TOGGLE -->
-        <div style="display:flex; gap:0.5rem; margin-bottom:1rem; flex-wrap:wrap;">
+        <div style="display:flex; gap:0.5rem; margin-bottom:1rem; flex-wrap:wrap; align-items:flex-start;">
           <button class="source-toggle active" data-source="federal" onclick="setSource('federal')">
             🏛️ Federal
           </button>
-          <button class="source-toggle" data-source="local-all" onclick="setSource('local-all')">
-            🏙️ All Local
-          </button>
-          <button class="source-toggle" data-source="mcallen" onclick="setSource('mcallen')">
-            McAllen
-          </button>
-          <button class="source-toggle" data-source="pharr" onclick="setSource('pharr')">
-            Pharr
-          </button>
-          <button class="source-toggle" data-source="mission" onclick="setSource('mission')">
-            Mission
-          </button>
-          <button class="source-toggle" data-source="corpus" onclick="setSource('corpus')">
-            Corpus Christi
-          </button>
-          <button class="source-toggle" data-source="tra" onclick="setSource('tra')">
-            Trinity River
-          </button>
+          <div class="source-group" id="localSourceGroup">
+            <button class="source-toggle" id="localDropdownBtn" onclick="toggleLocalDropdown()">
+              🏙️ Local Sources <span id="localTotalBadge"></span> ▾
+            </button>
+            <div class="source-dropdown" id="localDropdown">
+              <button class="source-dropdown-item" data-source="local-all" onclick="setSource('local-all')">
+                All Local
+                <span class="bid-count-badge" id="badge-local-all">–</span>
+              </button>
+              <div class="source-dropdown-divider"></div>
+              <button class="source-dropdown-item" data-source="mcallen" onclick="setSource('mcallen')">
+                McAllen
+                <span class="bid-count-badge" id="badge-mcallen">–</span>
+              </button>
+              <button class="source-dropdown-item" data-source="pharr" onclick="setSource('pharr')">
+                Pharr
+                <span class="bid-count-badge" id="badge-pharr">–</span>
+              </button>
+              <button class="source-dropdown-item" data-source="mission" onclick="setSource('mission')">
+                Mission
+                <span class="bid-count-badge" id="badge-mission">–</span>
+              </button>
+              <div class="source-dropdown-divider"></div>
+              <button class="source-dropdown-item" data-source="corpus" onclick="setSource('corpus')">
+                Corpus Christi
+                <span class="bid-count-badge" id="badge-corpus">–</span>
+              </button>
+              <button class="source-dropdown-item" data-source="tra" onclick="setSource('tra')">
+                Trinity River
+                <span class="bid-count-badge" id="badge-tra">–</span>
+              </button>
+            </div>
+          </div>
         </div>
         <h2 id="searchPanelTitle">Search Federal Opportunities</h2>
         <div class="search-row">
@@ -788,6 +867,7 @@
       // Minimal Supabase client (REST only, no SDK needed for MVP)
       supabase = { url: url.replace(/\/$/, ''), key };
       loadSavedIds();
+      loadBidCounts();
     }
 
     // ============================================
@@ -899,30 +979,78 @@
     // ============================================
     // SOURCE SWITCHING
     // ============================================
+    const cityNames = { mcallen: 'McAllen', pharr: 'Pharr', mission: 'Mission', corpus: 'Corpus Christi', tra: 'Trinity River', 'local-all': 'All Local' };
+
     function setSource(source) {
       currentSource = source;
-      document.querySelectorAll('.source-toggle').forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.source === source);
+
+      // Federal button active state
+      document.querySelector('[data-source="federal"]').classList.toggle('active', source === 'federal');
+
+      // Local dropdown button active state
+      const localBtn = document.getElementById('localDropdownBtn');
+      localBtn.classList.toggle('active', source !== 'federal');
+
+      // Dropdown item active states
+      document.querySelectorAll('.source-dropdown-item').forEach(item => {
+        item.classList.toggle('active', item.dataset.source === source);
       });
-      
+
+      // Close dropdown after selection
+      document.getElementById('localSourceGroup').classList.remove('open');
+
+      // Update search panel
       const title = document.getElementById('searchPanelTitle');
       const filters = document.querySelector('.filter-row');
-      
+
       if (source === 'federal') {
         title.textContent = 'Search Federal Opportunities';
         filters.style.display = 'grid';
-      } else if (source === 'local-all') {
-        title.textContent = 'Search All Local Opportunities';
-        filters.style.display = 'none';
       } else {
-        const cityNames = { mcallen: 'McAllen', pharr: 'Pharr', mission: 'Mission' };
-        title.textContent = `Search ${cityNames[source] || source} Opportunities`;
+        const label = cityNames[source] || source;
+        title.textContent = `Search ${label} Opportunities`;
         filters.style.display = 'none';
       }
-      
+
       clearSearch();
     }
 
+    function toggleLocalDropdown() {
+      const group = document.getElementById('localSourceGroup');
+      group.classList.toggle('open');
+    }
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+      const group = document.getElementById('localSourceGroup');
+      if (group && !group.contains(e.target)) {
+        group.classList.remove('open');
+      }
+    });
+async function loadBidCounts() {
+      if (!supabase) return;
+      const data = await supabaseGet('local_bids', 'select=id,source_id,local_sources(slug)&or=(status.neq.closed,status.is.null)');
+      if (!data) return;
+
+      const counts = {};
+      let total = 0;
+      data.forEach(bid => {
+        const slug = bid.local_sources?.slug;
+        if (slug) {
+          counts[slug] = (counts[slug] || 0) + 1;
+          total++;
+        }
+      });
+
+      // Update badges
+      Object.keys(cityNames).forEach(slug => {
+        const badge = document.getElementById('badge-' + slug);
+        if (badge) badge.textContent = counts[slug] || 0;
+      });
+      document.getElementById('badge-local-all').textContent = total;
+      document.getElementById('localTotalBadge').textContent = total > 0 ? `(${total})` : '';
+    }
+    
     // ============================================
     // SEARCH SAM.GOV
     // ============================================
