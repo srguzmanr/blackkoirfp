@@ -1343,7 +1343,7 @@
 
       try {
         // Build query - join with sources table
-        let query = 'select=*,local_sources(name,slug)&order=due_date.asc.nullslast';
+        let query = 'select=*,local_sources(name,slug)&status=neq.closed&order=due_date.asc.nullslast';
         
         // Filter by specific city if not "all local"
         if (currentSource !== 'local-all') {
